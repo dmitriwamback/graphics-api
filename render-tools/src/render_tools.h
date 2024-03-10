@@ -1,20 +1,32 @@
 #define GLFW_INCLUDE_VULKAN
 
-#include <iostream>
-
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 #include "platform.h"
+/*
+>definitions of variables/macros in <platform.h>
 
-#include <glm/vec3.hpp>
-#include <glm/vec2.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+    ----------------- DEFINTIONS -----------------
+    IN_FLIGHT_FRAMES,               -> Macro (integer)
+    PLATFORM_OSX,                   -> Macro (no value)
+    PLATFORM_WINDOWS                -> Macro (no value)
 
+    ------------------ FUNCTIONS -----------------
+    RTASSERT,                       -> Macro (function)
+    RTLOG,                          -> Macro (function)
+
+    ------------------ VARIABLES ------------------
+    validationLayers,               -> std::vector
+    deviceExtensions                -> std::vector
+*/
 
 //------------------------------------------------------------------------------------------------------//
+
+std::vector<VkImage>        swapchainImages;
+std::vector<VkImageView>    swapchainImageViews;
+std::vector<VkFramebuffer>  framebuffers;
 
 typedef struct vulkan_cxt 
 {
@@ -36,8 +48,66 @@ vkcxt* vulkan_context;
 
 //------------------------------------------------------------------------------------------------------//
 
+#include "internal.h"
+/*
+>definitions of variables/macros/functions in <internal.h>
+    ----------------- FUNCTIONS -----------------
+    debugCallback,                  -> returns VkBool32,
+    QueryQueueFamily                -> returns queue_family,
+    CreateSynchronizedObjects       -> no return,
+    QuerySwapchainSupport           -> returns swapchaindetails,
+    ChooseSwapchainSurface          -> returns VkSurfaceFormatKHR,
+    ChooseSwapchainPresentMode      -> returns VkPresentModeKHR,
+    ChooseSwapExtent                -> returns VkExtent2D,
+    CreateSwapchain                 -> no return,
+    CreateFramebuffers              -> no return,
+    CheckDeviceExtensions           -> returns bool,
+    IsPhysicalDeviceAdequate        -> returns bool,
+    QueryPhysicalDevices            -> returns VkPhysicalDevice,
+    CreateDevice                    -> no return,
+
+    ----------------- VARIABLES -----------------
+    commandBuffers                  -> std::vector
+    imageSemaphores                 -> std::vector
+    inFlightFence                   -> std::vector
+    commandPool                     -> VkCommandPool,
+    depthImage                      -> VkImage,
+    depthImageMemory                -> VkDeviceMemory,
+    depthImageView                  -> VkImageView,
+    swapchainFormat                 -> VkFormat,
+    defaultTextureSampler           -> VkSampler,
+    defaultRenderpass               -> VkRenderPass,
+    global_queue_family             -> queuefamily (structure)
+
+    ----------------- STRUCTURES ----------------
+    queuefamily                     -> qf       (typedef),
+    swapchaindetails                -> sd       (typedef),
+    pipelinecontent                 -> pc       (typedef),
+    pipelinecontextbuffer           -> pcb      (typedef),
+    pipelinecreateinfo              -> pci      (typedef),
+    uniformbuffermemory             -> ubm      (typedef),
+    pipeline                        -> pl       (typedef)
+*/
+
+
+#include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 namespace RenderTools {
+
+    void RTMainLoop() {
+        
+    }
+
+    
+
+    //------------------------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------------------------//
+
+
 
     void Initialize() {
 
@@ -88,8 +158,15 @@ namespace RenderTools {
         if (enableValidationLayers && !CheckValidationSupport()) std::cout << "Validation layers not found!\n";
 
         if (vkCreateInstance(&instanceCreateInfo, nullptr, &vulkan_context->instance) != VK_SUCCESS) RTASSERT("Couldn't create VkInstance");
+        if (glfwCreateWindowSurface(vulkan_context->instance, vulkan_context->window, nullptr, &vulkan_context->surface) != VK_SUCCESS) RTASSERT("Failed to create VkSurface");
 
         //------------------------------------------------------------------------------------------------------//
+
+        vulkan_context->physicalDevice = QueryPhysicalDevices();
+        CreateDevice();
+        CreateSwapchain();
+        CreateSynchronizedObjects();
+        RTMainLoop();
 
         free(vulkan_context);
     }
